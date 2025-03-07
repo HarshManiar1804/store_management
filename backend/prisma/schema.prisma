@@ -1,0 +1,76 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Store {
+  id          String       @id @default(uuid())
+  label       String
+  city        String
+  state       String
+  skus        SKU[]
+  planning    Planning[]
+  calculation Calculation[]
+}
+
+model SKU {
+  id          String       @id @default(uuid())
+  label       String
+  class       String
+  department  String
+  price       Float
+  cost        Float
+  storeId     String
+  store       Store        @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  planning    Planning[]
+  calculation Calculation[]
+}
+
+model Calendar {
+  seqNo       Int         @id
+  week        String
+  weekLabel   String
+  month       String
+  monthLabel  String
+}
+
+model Planning {
+  id          String       @id @default(uuid())
+  storeId     String
+  skuId       String
+  week        String
+  salesUnits  Int
+  store       Store        @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  sku         SKU          @relation(fields: [skuId], references: [id], onDelete: Cascade)
+}
+
+model Calculation {
+  id          String       @id @default(uuid())
+  storeId     String
+  skuId       String
+  week        String
+  salesUnits  Int
+  salesDollars Float
+  costDollars  Float
+  gmDollars    Float
+  gmPercent    Float
+  store       Store        @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  sku         SKU          @relation(fields: [skuId], references: [id], onDelete: Cascade)
+}
+
+model Chart {
+  week        String       @id
+  gmDollars   Float
+  salesDollars Float
+  gmPercent    Float
+}
