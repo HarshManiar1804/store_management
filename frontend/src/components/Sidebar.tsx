@@ -17,9 +17,9 @@ const routes = [
     icon: Store
   },
   {
-    path: '/charts',
-    name: 'Charts',
-    icon: BarChart
+    path: '/skus',
+    name: 'SKUs',
+    icon: Package
   },
   {
     path: '/planning',
@@ -27,10 +27,12 @@ const routes = [
     icon: Calendar
   },
   {
-    path: '/skus',
-    name: 'SKUs',
-    icon: Package
+    path: '/charts',
+    name: 'Charts',
+    icon: BarChart
   },
+  
+  
 ];
 
 const Sidebar = () => {

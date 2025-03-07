@@ -1,27 +1,34 @@
-import express from "express";
-import { PrismaClient } from "@prisma/client";
 import dotenv from "dotenv";
+import express from "express";
+import cors from "cors";
+import { PrismaClient } from "@prisma/client";
 
-dotenv.config();
+dotenv.config(); // Load environment variables
 
 const app = express();
-const prisma = new PrismaClient();
-
 const PORT = process.env.PORT || 4000;
 
-// Check if port is free
-import net from "net";
-const server = net.createServer();
-server.once("error", (err: any) => {
-  if (err.code === "EADDRINUSE") {
-    console.log(`❌ Port ${PORT} is already in use. Use a different port.`);
-    process.exit(1);
-  }
-});
+// Middleware
+app.use(cors());
+app.use(express.json());
 
-server.once("listening", () => {
-  server.close();
-  app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
-});
+// Initialize Prisma
+const prisma = new PrismaClient();
 
-server.listen(PORT);
+// API to fetch all stores
+app.get("/stores", async (req , res) => {
+    try {
+        const stores = await prisma.store.findMany();
+        res.json(stores);
+    } catch (error) {
+        console.error("Error fetching stores:", error);
+        res.status(500).json({ error: "Internal Server Error" });
+    }
+});
+app.get("/", (req, res) => {
+    res.send("Hello World");
+});
+// Start the Server
+app.listen(PORT, () => {
+    console.log(`Server running on http://localhost:${PORT}`);
+});

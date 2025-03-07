@@ -1,9 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -14,63 +8,59 @@ datasource db {
 }
 
 model Store {
-  id          String       @id @default(uuid())
-  label       String
-  city        String
-  state       String
-  skus        SKU[]
-  planning    Planning[]
-  calculation Calculation[]
+  id    String @id
+  label String
+  city  String
+  state String
 }
 
-model SKU {
-  id          String       @id @default(uuid())
-  label       String
-  class       String
-  department  String
-  price       Float
-  cost        Float
-  storeId     String
-  store       Store        @relation(fields: [storeId], references: [id], onDelete: Cascade)
-  planning    Planning[]
-  calculation Calculation[]
+model SKUs {
+  id         String @id
+  label      String
+  class      String
+  department String
+  price      Float
+  cost       Float
 }
 
 model Calendar {
-  seqNo       Int         @id
-  week        String
-  weekLabel   String
-  month       String
-  monthLabel  String
+  id         Int    @id @default(autoincrement())
+  week       String
+  weekLabel  String
+  month      String
+  monthLabel String
 }
 
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
 model Planning {
-  id          String       @id @default(uuid())
-  storeId     String
-  skuId       String
-  week        String
-  salesUnits  Int
-  store       Store        @relation(fields: [storeId], references: [id], onDelete: Cascade)
-  sku         SKU          @relation(fields: [skuId], references: [id], onDelete: Cascade)
+  store      String
+  sku        String
+  week       String
+  salesUnits Int
+
+  @@ignore
 }
 
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
 model Calculation {
-  id          String       @id @default(uuid())
-  storeId     String
-  skuId       String
-  week        String
-  salesUnits  Int
-  salesDollars Float
-  costDollars  Float
-  gmDollars    Float
-  gmPercent    Float
-  store       Store        @relation(fields: [storeId], references: [id], onDelete: Cascade)
-  sku         SKU          @relation(fields: [skuId], references: [id], onDelete: Cascade)
+  store        String
+  sku          String
+  week         String
+  salesUnits   String
+  salesDollars String
+  costDollars  String
+  gmDollars    String
+  gmPercent    String
+
+  @@ignore
 }
 
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
 model Chart {
-  week        String       @id
-  gmDollars   Float
-  salesDollars Float
-  gmPercent    Float
+  week         String
+  gmDollars    String
+  salesDollars String
+  gmPercent    String
+
+  @@ignore
 }
