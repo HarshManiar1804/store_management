@@ -24,7 +24,7 @@ model SKUs {
 }
 
 model Calendar {
-  id         Int    @id @default(autoincrement())
+  id         Int    @id 
   week       String
   weekLabel  String
   month      String
@@ -33,6 +33,7 @@ model Calendar {
 
 /// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
 model Planning {
+  id         Int    @id 
   store      String
   sku        String
   week       String
@@ -43,6 +44,7 @@ model Planning {
 
 /// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
 model Calculation {
+  id           Int    @id
   store        String
   sku          String
   week         String
@@ -57,6 +59,7 @@ model Calculation {
 
 /// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
 model Chart {
+  id           Int    @id 
   week         String
   gmDollars    String
   salesDollars String

@@ -2,6 +2,7 @@ import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import Navbar from "./components/Navbar";
 import Sidebar from "./components/Sidebar";
 import { Outlet } from "react-router-dom";
+import { Toaster } from "@/components/ui/sonner";
 // Import all page components
 import Store from "./pages/Store";
 import SKUs from "./pages/SKUs";
@@ -26,6 +27,7 @@ const Layout = () => {
 function App() {
   return (
     <Router>
+      <Toaster />
       <Routes>
         <Route element={<Layout />}>
           <Route path="/" element={<Store />} />

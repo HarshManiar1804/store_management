@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button"
 
 const Navbar = () => {
   return (
-    <nav className="flex items-center justify-between p-4 bg-white shadow-md">
+    <nav className="flex items-center justify-between p-2 bg-white shadow-md">
       <div className="flex items-center space-x-4">
         {/* Logo */}
         <img
