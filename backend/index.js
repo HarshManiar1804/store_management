@@ -3,6 +3,7 @@ import express from "express";
 import cors from "cors";
 import storeRoutes from "./routes/storeRoutes.js";
 import skusRoutes from "./routes/skusRoutes.js";
+import planningRoutes from "./routes/planningRoute.js";
 dotenv.config(); // Load environment variables
 
 const app = express();
@@ -15,6 +16,7 @@ app.use(express.json());
 // Routes
 app.use("/stores", storeRoutes);
 app.use("/skus", skusRoutes);
+app.use("/planning", planningRoutes);
 
 app.get("/", (req, res) => {
   res.send("Gsynergy server is running");
