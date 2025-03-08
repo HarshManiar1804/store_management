@@ -1,4 +1,4 @@
-import  { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import axios from 'axios';
 import { useForm } from 'react-hook-form';
 import {
@@ -45,6 +45,7 @@ const Store = () => {
     const [loading, setLoading] = useState(true);
     const [currentPage, setCurrentPage] = useState(1);
     const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+    const [searchQuery, setSearchQuery] = useState('');
     const itemsPerPage = 10;
 
     const { register, handleSubmit, reset, formState: { errors } } = useForm<FormData>();
@@ -105,14 +106,16 @@ const Store = () => {
 
     // Get current page data
     const getCurrentPageData = () => {
+        const filteredStores = allStores.filter(store =>
+            store.label.toLowerCase().includes(searchQuery.toLowerCase())
+        );
         const startIndex = (currentPage - 1) * itemsPerPage;
-        return allStores.slice(startIndex, startIndex + itemsPerPage);
+        return filteredStores.slice(startIndex, startIndex + itemsPerPage);
     };
 
     const handlePageChange = (page: number) => {
         setCurrentPage(page);
     };
-
     if (loading) {
         return <div>Loading stores...</div>;
     }
@@ -121,8 +124,16 @@ const Store = () => {
 
     return (
         <div className="space-y-3">
+
+            <h2 className="text-2xl font-bold">Stores</h2>
             <div className="flex justify-between items-center mb-4">
-                <h2 className="text-2xl font-bold">Stores</h2>
+                <input
+                    type="text"
+                    placeholder="Search stores..."
+                    className="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent mr-2"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                />
                 <Drawer open={isDrawerOpen} onOpenChange={setIsDrawerOpen}>
                     <DrawerTrigger asChild>
                         <Button className='cursor-pointer'>Add New Store</Button>
@@ -222,7 +233,7 @@ const Store = () => {
                     ))}
                 </TableBody>
             </Table>
-            
+
             <div className="flex items-center justify-end space-x-2">
                 <Button
                     variant="outline"
