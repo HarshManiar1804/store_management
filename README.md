@@ -84,7 +84,7 @@ The application uses the following data models:
 1. Clone the repository:
    ```
    git clone git@github.com:HarshManiar1804/181818_Harsh_Maniar.git
-   cd gsynergy-app
+   cd 181818_Harsh_Maniar
    ```
 
 2. Set up the backend:
