@@ -1,10 +1,17 @@
+/**
+ * Charts Page Component
+ * 
+ * This component provides an interface for viewing chart visualizations for different stores:
+ * - Store selection via a dropdown
+ * - Fetching and displaying chart data for the selected store
+ * - Rendering chart visualizations through the StoreChart component
+ */
 import { ChevronsUpDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
     Command,
     CommandEmpty,
     CommandGroup,
-    CommandInput,
     CommandItem,
     CommandList,
 } from "@/components/ui/command";
@@ -16,21 +23,21 @@ import {
 import { useState, useEffect } from "react";
 import axios from "axios";
 import StoreChart from "@/components/StoreChart";
-// import PlanningSKU from "@/components/PlanningSKU";
+import { iStore } from "@/lib/utils";
 
-interface Store {
-    id: string;
-    label: string;
-    city: string;
-    state: string;
-}
 
 const Chart = () => {
-    const [open, setOpen] = useState(false);
-    const [value, setValue] = useState("");
-    const [stores, setStores] = useState<Store[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [skuData, setSkuData] = useState<{ data: Record<string, any> }>({ data: {} });
+    // State management for store selection and data
+    const [open, setOpen] = useState(false); // Controls dropdown open state
+    const [value, setValue] = useState(""); // Selected store ID
+    const [stores, setStores] = useState<iStore[]>([]); // List of available stores
+    const [loading, setLoading] = useState(true); // Tracks loading state for API calls
+    const [skuData, setSkuData] = useState<{ data: Record<string, any> }>({ data: {} }); // Chart data for selected store
+
+    /**
+     * Fetches all stores from the API
+     * Sets loading state during API call and updates store data on success
+     */
     const fetchStores = async () => {
         try {
             setLoading(true);
@@ -42,10 +49,16 @@ const Chart = () => {
             setLoading(false);
         }
     };
+
+    // Load stores data on component mount
     useEffect(() => {
         fetchStores();
     }, []);
 
+    /**
+     * Fetches chart data for a specific store
+     * @param storeId - The ID of the store to fetch chart data for
+     */
     const fetchChartData = async (storeId: string) => {
         try {
             setLoading(true);
@@ -58,6 +71,7 @@ const Chart = () => {
         }
     };
 
+    // Fetch chart data when a store is selected
     useEffect(() => {
         if (value) {
             fetchChartData(value);
@@ -66,10 +80,12 @@ const Chart = () => {
 
     return (
         <>
+            {/* Show loading indicator or store selection UI */}
             {loading ? (
                 <div>Loading stores...</div>
             ) : (
                 <div className="flex items-center  gap-4 ">
+                    {/* Store selection section */}
                     <h2 className="text-2xl font-bold">Store</h2>
                     <Popover open={open} onOpenChange={setOpen}>
                         <PopoverTrigger asChild>
@@ -79,6 +95,7 @@ const Chart = () => {
                                 aria-expanded={open}
                                 className="w-[250px] justify-between"
                             >
+                                {/* Display selected store name or placeholder */}
                                 {value
                                     ? stores.find((store) => store.id === value)?.label
                                     : "Select store..."}
@@ -90,6 +107,7 @@ const Chart = () => {
                                 <CommandList>
                                     <CommandEmpty>No store found.</CommandEmpty>
                                     <CommandGroup>
+                                        {/* Map through stores for selection */}
                                         {stores.map((store) => (
                                             <CommandItem
                                                 key={store.id}
@@ -100,7 +118,6 @@ const Chart = () => {
                                                     console.log("Selected Store ID:", store.id);
                                                 }}
                                             >
-
                                                 {store.label}
                                             </CommandItem>
                                         ))}
@@ -111,11 +128,15 @@ const Chart = () => {
                     </Popover>
                 </div>
             )}
+
+            {/* Display selected store name as heading */}
             <h2 className="text-2xl font-bold mb-4">
                 {value
                     ? stores.find((store) => store.id === value)?.label
                     : ""}
             </h2>
+
+            {/* Display chart visualizations or prompt to select a store */}
             <div className="w-full">
                 {value
                     ? <StoreChart skuData={skuData} />

@@ -1,8 +1,28 @@
+/**
+ * SKUs Controller
+ * 
+ * This file contains controller functions for managing SKU (Stock Keeping Unit) data in the application.
+ * It handles the business logic for SKU operations including retrieving, creating,
+ * and deleting SKUs.
+ * 
+ * Features:
+ * - getAllSKUs: Retrieves all SKUs from the database
+ * - createSKU: Creates a new SKU with validation for required fields and ID format
+ * - deleteSKU: Removes a SKU by its ID
+ * 
+ * The SKU model includes fields for ID, label, class, department, price, and cost.
+ * SKU IDs must follow the format starting with "SK" prefix.
+ */
 import express from "express";
 import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
+/**
+ * Get all SKUs from the database
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ */
 export const getAllSKUs = async (req, res) => {
   try {
     const skus = await prisma.sKUs.findMany();
@@ -13,6 +33,11 @@ export const getAllSKUs = async (req, res) => {
   }
 };
 
+/**
+ * Create a new SKU
+ * @param {Object} req - Express request object with SKU data in body
+ * @param {Object} res - Express response object
+ */
 export const createSKU = async (req, res) => {
   try {
     const { id, label, class: skuClass, department, price, cost } = req.body;
@@ -59,6 +84,11 @@ export const createSKU = async (req, res) => {
   }
 };
 
+/**
+ * Delete a SKU by ID
+ * @param {Object} req - Express request object with SKU ID in params
+ * @param {Object} res - Express response object
+ */
 export const deleteSKU = async (req, res) => {
   try {
     const { id } = req.params;

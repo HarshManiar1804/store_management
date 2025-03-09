@@ -1,3 +1,6 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
 generator client {
   provider = "prisma-client-js"
 }
@@ -7,6 +10,12 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+/**
+ * Store Model
+ * 
+ * Represents retail store locations in the application.
+ * Each store has a unique identifier, display name, and location information.
+ */
 model Store {
   id    String @id
   label String
@@ -14,6 +23,13 @@ model Store {
   state String
 }
 
+/**
+ * SKUs Model
+ * 
+ * Represents Stock Keeping Units (products) in the application.
+ * Each SKU has a unique identifier, display name, classification information,
+ * and pricing details.
+ */
 model SKUs {
   id         String @id
   label      String
@@ -23,6 +39,12 @@ model SKUs {
   cost       Float
 }
 
+/**
+ * Calendar Model
+ * 
+ * Represents time periods for planning and reporting.
+ * Contains week and month information with both codes and display labels.
+ */
 model Calendar {
   id         Int    @id 
   week       String
@@ -31,6 +53,15 @@ model Calendar {
   monthLabel String
 }
 
+/**
+ * Planning Model
+ * 
+ * Represents sales planning data linking stores, SKUs, and time periods.
+ * Contains sales units for specific store-SKU-week combinations.
+ * 
+ * Note: Currently marked with @@ignore as it lacks a proper unique identifier
+ * for Prisma Client operations.
+ */
 /// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
 model Planning {
   id         Int    @id 
@@ -42,6 +73,15 @@ model Planning {
   @@ignore
 }
 
+/**
+ * Calculation Model
+ * 
+ * Represents calculated sales metrics for analysis.
+ * Contains various financial metrics like sales dollars, cost, and gross margin.
+ * 
+ * Note: Currently marked with @@ignore as it lacks a proper unique identifier
+ * for Prisma Client operations.
+ */
 /// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
 model Calculation {
   id           Int    @id
@@ -57,6 +97,15 @@ model Calculation {
   @@ignore
 }
 
+/**
+ * Chart Model
+ * 
+ * Represents aggregated data for charting and visualization.
+ * Contains summary financial metrics by week for dashboard displays.
+ * 
+ * Note: Currently marked with @@ignore as it lacks a proper unique identifier
+ * for Prisma Client operations.
+ */
 /// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
 model Chart {
   id           Int    @id 

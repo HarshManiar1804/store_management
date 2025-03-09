@@ -1,3 +1,13 @@
+/**
+ * Store Management Page Component
+ * 
+ * This component provides a complete interface for managing store data including:
+ * - Viewing a paginated list of stores
+ * - Adding new stores via a drawer form
+ * - Deleting existing stores
+ * - Searching stores by name
+ * - Pagination controls
+ */
 import { useEffect, useState } from 'react';
 import axios from 'axios';
 import { useForm } from 'react-hook-form';
@@ -25,38 +35,33 @@ import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button";
 import { X } from 'lucide-react';
 import { toast } from 'sonner';
+import { iStore, iStoreFormData, } from '@/lib/utils';
 
-interface Store {
-    id: string;
-    label: string;
-    city: string;
-    state: string;
-}
-
-interface FormData {
-    id: string;
-    label: string;
-    city: string;
-    state: string;
-}
 
 const Store = () => {
-    const [allStores, setAllStores] = useState<Store[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [currentPage, setCurrentPage] = useState(1);
-    const [isDrawerOpen, setIsDrawerOpen] = useState(false);
-    const [searchQuery, setSearchQuery] = useState('');
-    const itemsPerPage = 10;
+    // State management for store data and UI controls
+    const [allStores, setAllStores] = useState<iStore[]>([]); // Stores all store data from API
+    const [loading, setLoading] = useState(true); // Tracks loading state for API calls
+    const [currentPage, setCurrentPage] = useState(1); // Current page for pagination
+    const [isDrawerOpen, setIsDrawerOpen] = useState(false); // Controls add store drawer visibility
+    const [searchQuery, setSearchQuery] = useState(''); // Stores search input for filtering
+    const itemsPerPage = 10; // Number of stores to display per page
 
-    const { register, handleSubmit, reset, formState: { errors } } = useForm<FormData>();
+    // Form handling with react-hook-form
+    const { register, handleSubmit, reset, formState: { errors } } = useForm<iStoreFormData>();
 
-    // Calculate total pages based on all stores
+    // Calculate total pages based on all stores for pagination
     const totalPages = Math.ceil(allStores.length / itemsPerPage);
 
+    // Load stores data on component mount
     useEffect(() => {
         fetchStores();
     }, []);
 
+    /**
+     * Fetches all stores from the API
+     * Sets loading state during API call and updates store data on success
+     */
     const fetchStores = async () => {
         try {
             setLoading(true);
@@ -69,7 +74,12 @@ const Store = () => {
         }
     };
 
-    const createStore = async (storeData: FormData) => {
+    /**
+     * Creates a new store by sending data to the API
+     * @param storeData - The store data to be created
+     * @returns The response data from the API
+     */
+    const createStore = async (storeData: iStoreFormData) => {
         try {
             const response = await axios.post('http://localhost:4000/stores', storeData);
             toast.success('Store added successfully');
@@ -80,7 +90,12 @@ const Store = () => {
         }
     };
 
-    const onSubmit = async (data: FormData) => {
+    /**
+     * Handles form submission for creating a new store
+     * Calls createStore with form data and refreshes the store list on success
+     * @param data - The form data from react-hook-form
+     */
+    const onSubmit = async (data: iStoreFormData) => {
         try {
             await createStore(data);
             setIsDrawerOpen(false);
@@ -91,6 +106,11 @@ const Store = () => {
         }
     };
 
+    /**
+     * Deletes a store by ID
+     * Refreshes the store list after successful deletion
+     * @param id - The ID of the store to delete
+     */
     const handleDelete = async (id: string) => {
         try {
             await axios.delete(`http://localhost:4000/stores/${id}`);
@@ -101,10 +121,13 @@ const Store = () => {
             console.error('Error deleting store:', error);
             toast.error('Failed to delete store');
         }
-
     };
 
-    // Get current page data
+    /**
+     * Filters and paginates store data for the current page
+     * Applies search filter to store names
+     * @returns Array of stores for the current page
+     */
     const getCurrentPageData = () => {
         const filteredStores = allStores.filter(store =>
             store.label.toLowerCase().includes(searchQuery.toLowerCase())
@@ -113,20 +136,30 @@ const Store = () => {
         return filteredStores.slice(startIndex, startIndex + itemsPerPage);
     };
 
+    /**
+     * Updates the current page for pagination
+     * @param page - The page number to navigate to
+     */
     const handlePageChange = (page: number) => {
         setCurrentPage(page);
     };
+
+    // Show loading indicator while fetching data
     if (loading) {
         return <div>Loading stores...</div>;
     }
 
+    // Get current page data for rendering
     const currentStores = getCurrentPageData();
 
     return (
         <div className="space-y-3">
-
+            {/* Page title */}
             <h2 className="text-2xl font-bold">Stores</h2>
+            
+            {/* Search and Add Store controls */}
             <div className="flex justify-between items-center mb-4">
+                {/* Search input */}
                 <input
                     type="text"
                     placeholder="Search stores..."
@@ -134,6 +167,8 @@ const Store = () => {
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                 />
+                
+                {/* Add Store Drawer */}
                 <Drawer open={isDrawerOpen} onOpenChange={setIsDrawerOpen}>
                     <DrawerTrigger asChild>
                         <Button className='cursor-pointer'>Add New Store</Button>
@@ -147,6 +182,7 @@ const Store = () => {
                                 </DrawerDescription>
                             </DrawerHeader>
                             <div className="p-4 space-y-4">
+                                {/* Store ID field */}
                                 <div className="space-y-2">
                                     <Label htmlFor="id">Store ID</Label>
                                     <Input
@@ -158,6 +194,8 @@ const Store = () => {
                                         <p className="text-sm text-red-500">{errors.id.message}</p>
                                     )}
                                 </div>
+                                
+                                {/* Store Name field */}
                                 <div className="space-y-2">
                                     <Label htmlFor="label">Store Name</Label>
                                     <Input
@@ -169,6 +207,8 @@ const Store = () => {
                                         <p className="text-sm text-red-500">{errors.label.message}</p>
                                     )}
                                 </div>
+                                
+                                {/* City field */}
                                 <div className="space-y-2">
                                     <Label htmlFor="city">City</Label>
                                     <Input
@@ -180,6 +220,8 @@ const Store = () => {
                                         <p className="text-sm text-red-500">{errors.city.message}</p>
                                     )}
                                 </div>
+                                
+                                {/* State field */}
                                 <div className="space-y-2">
                                     <Label htmlFor="state">State</Label>
                                     <Input
@@ -202,6 +244,8 @@ const Store = () => {
                     </DrawerContent>
                 </Drawer>
             </div>
+            
+            {/* Stores Table */}
             <Table>
                 <TableCaption>List of Available Stores</TableCaption>
                 <TableHeader>
@@ -234,6 +278,7 @@ const Store = () => {
                 </TableBody>
             </Table>
 
+            {/* Pagination Controls */}
             <div className="flex items-center justify-end space-x-2">
                 <Button
                     variant="outline"

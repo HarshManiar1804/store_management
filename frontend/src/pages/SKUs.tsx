@@ -1,3 +1,14 @@
+/**
+ * SKUs Management Page Component
+ * 
+ * This component provides a complete interface for managing SKU (Stock Keeping Unit) data including:
+ * - Viewing a paginated list of SKUs
+ * - Adding new SKUs via a drawer form
+ * - Deleting existing SKUs
+ * - Searching SKUs by name
+ * - Pagination controls
+ */
+
 import { useEffect, useState } from 'react';
 import axios from 'axios';
 import { useForm } from 'react-hook-form';
@@ -25,42 +36,33 @@ import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button";
 import { X } from 'lucide-react';
 import { toast } from 'sonner';
+import {  iSKUFormData, iSKU} from '@/lib/utils';
 
-interface SKU {
-    id: string;
-    label: string;
-    class: string;
-    department: string;
-    price: number;
-    cost: number;
-}
-
-interface FormData {
-    id: string;
-    label: string;
-    class: string;
-    department: string;
-    price: number;
-    cost: number;
-}
 
 const SKUs = () => {
-    const [allSKUs, setAllSKUs] = useState<SKU[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [currentPage, setCurrentPage] = useState(1);
-    const [searchQuery, setSearchQuery] = useState('');
-    const [isDrawerOpen, setIsDrawerOpen] = useState(false);
-    const itemsPerPage = 10;
+    // State management for SKU data and UI controls
+    const [allSKUs, setAllSKUs] = useState<iSKU[]>([]); // Stores all SKU data from API
+    const [loading, setLoading] = useState(true); // Tracks loading state for API calls
+    const [currentPage, setCurrentPage] = useState(1); // Current page for pagination
+    const [searchQuery, setSearchQuery] = useState(''); // Stores search input for filtering
+    const [isDrawerOpen, setIsDrawerOpen] = useState(false); // Controls add SKU drawer visibility
+    const itemsPerPage = 10; // Number of SKUs to display per page
 
-    const { register, handleSubmit, reset, formState: { errors } } = useForm<FormData>();
+    // Form handling with react-hook-form
+    const { register, handleSubmit, reset, formState: { errors } } = useForm<iSKUFormData>();
 
-    // Calculate total pages based on all SKUS
+    // Calculate total pages based on all SKUs for pagination
     const totalPages = Math.ceil(allSKUs.length / itemsPerPage);
 
+    // Load SKUs data on component mount
     useEffect(() => {
         fetchSKU();
     }, []);
 
+    /**
+     * Fetches all SKUs from the API
+     * Sets loading state during API call and updates SKU data on success
+     */
     const fetchSKU = async () => {
         try {
             setLoading(true);
@@ -73,7 +75,12 @@ const SKUs = () => {
         }
     };
 
-    const createSKU = async (skuData: FormData) => {
+    /**
+     * Creates a new SKU by sending data to the API
+     * @param skuData - The SKU data to be created
+     * @returns The response data from the API
+     */
+    const createSKU = async (skuData: iSKUFormData) => {
         try {
             const response = await axios.post('http://localhost:4000/skus', skuData);
             toast.success('SKU added successfully');
@@ -84,7 +91,13 @@ const SKUs = () => {
         }
     };
 
-    const onSubmit = async (data: FormData) => {
+    /**
+     * Handles form submission for creating a new SKU
+     * Formats numeric values and calls createSKU with form data
+     * Refreshes the SKU list on success
+     * @param data - The form data from react-hook-form
+     */
+    const onSubmit = async (data: iSKUFormData) => {
         try {
             const formattedData = {
                 ...data,
@@ -101,7 +114,11 @@ const SKUs = () => {
         }
     };
 
-
+    /**
+     * Deletes a SKU by ID
+     * Refreshes the SKU list after successful deletion
+     * @param id - The ID of the SKU to delete
+     */
     const handleDelete = async (id: string) => {
         try {
             await axios.delete(`http://localhost:4000/skus/${id}`);
@@ -112,11 +129,13 @@ const SKUs = () => {
             console.error('Error deleting SKU:', error);
             toast.error('Failed to delete SKU');
         }
-
     };
 
-    // Get current page data
-
+    /**
+     * Filters and paginates SKU data for the current page
+     * Applies search filter to SKU names
+     * @returns Array of SKUs for the current page
+     */
     const getCurrentPageData = () => {
         const filteredStores = allSKUs.filter(store =>
             store.label.toLowerCase().includes(searchQuery.toLowerCase())
@@ -125,20 +144,30 @@ const SKUs = () => {
         return filteredStores.slice(startIndex, startIndex + itemsPerPage);
     };
 
+    /**
+     * Updates the current page for pagination
+     * @param page - The page number to navigate to
+     */
     const handlePageChange = (page: number) => {
         setCurrentPage(page);
     };
 
+    // Show loading indicator while fetching data
     if (loading) {
         return <div>Loading SKUs...</div>;
     }
 
+    // Get current page data for rendering
     const currentSKUs = getCurrentPageData();
 
     return (
         <div className="space-y-3">
+            {/* Page title */}
             <h2 className="text-2xl font-bold">SKUs</h2>
+            
+            {/* Search and Add SKU controls */}
             <div className="flex justify-between items-center mb-4">
+                {/* Search input */}
                 <input
                     type="text"
                     placeholder="Search SKUs..."
@@ -146,6 +175,8 @@ const SKUs = () => {
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                 />
+                
+                {/* Add SKU Drawer */}
                 <Drawer open={isDrawerOpen} onOpenChange={setIsDrawerOpen}>
                     <DrawerTrigger asChild>
                         <Button className='cursor-pointer'>Add New SKU</Button>
@@ -158,6 +189,8 @@ const SKUs = () => {
                                     Fill in the details to add a new SKU.
                                 </DrawerDescription>
                             </DrawerHeader>
+                            
+                            {/* Dynamic form fields for SKU data */}
                             <div className="p-4 space-y-4">
                                 {['id', 'label', 'class', 'department', 'price', 'cost'].map((field) => (
                                     <div className="space-y-2" key={field}>
@@ -165,11 +198,11 @@ const SKUs = () => {
                                         <Input
                                             id={field}
                                             type={field === 'price' || field === 'cost' ? 'number' : 'text'}
-                                            {...register(field as keyof FormData, { required: `${field} is required` })}
+                                            {...register(field as keyof iSKUFormData, { required: `${field} is required` })}
                                             placeholder={`Enter ${field}`}
                                         />
-                                        {errors[field as keyof FormData] && (
-                                            <p className="text-sm text-red-500">{errors[field as keyof FormData]?.message}</p>
+                                        {errors[field as keyof iSKUFormData] && (
+                                            <p className="text-sm text-red-500">{errors[field as keyof iSKUFormData]?.message}</p>
                                         )}
                                     </div>
                                 ))}
@@ -184,6 +217,8 @@ const SKUs = () => {
                     </DrawerContent>
                 </Drawer>
             </div>
+            
+            {/* SKUs Table */}
             <Table>
                 <TableCaption>List of Available SKUs</TableCaption>
                 <TableHeader>
@@ -217,6 +252,8 @@ const SKUs = () => {
                     ))}
                 </TableBody>
             </Table>
+            
+            {/* Pagination Controls */}
             <div className="flex items-center justify-end space-x-2">
                 <Button
                     variant="outline"

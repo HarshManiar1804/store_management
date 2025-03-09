@@ -1,8 +1,28 @@
+/**
+ * Store Controller
+ * 
+ * This file contains controller functions for managing store data in the application.
+ * It handles the business logic for store operations including retrieving, creating,
+ * and deleting stores.
+ * 
+ * Features:
+ * - getAllStores: Retrieves all stores from the database
+ * - createStore: Creates a new store with validation for required fields and ID format
+ * - deleteStore: Removes a store by its ID
+ * 
+ * The store model includes fields for ID, label, city, and state.
+ * Store IDs must follow the format starting with "ST" prefix.
+ */
 import express from "express";
 import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
+/**
+ * Get all stores from the database
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ */
 export const getAllStores = async (req, res) => {
   try {
     const stores = await prisma.store.findMany();
@@ -13,6 +33,11 @@ export const getAllStores = async (req, res) => {
   }
 };
 
+/**
+ * Create a new store
+ * @param {Object} req - Express request object with store data in body
+ * @param {Object} res - Express response object
+ */
 export const createStore = async (req, res) => {
   try {
     const { id, label, city, state } = req.body;
@@ -56,6 +81,11 @@ export const createStore = async (req, res) => {
   }
 };
 
+/**
+ * Delete a store by ID
+ * @param {Object} req - Express request object with store ID in params
+ * @param {Object} res - Express response object
+ */
 export const deleteStore = async (req, res) => {
   try {
     const { id } = req.params;

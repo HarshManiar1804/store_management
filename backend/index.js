@@ -1,3 +1,15 @@
+/**
+ * Main Server Entry Point
+ * 
+ * This file initializes and configures the Express server for the GSynergy application.
+ * It sets up middleware, defines routes, and starts the server.
+ * 
+ * Features:
+ * - Environment configuration using dotenv
+ * - CORS support for cross-origin requests
+ * - JSON parsing middleware
+ * - API routes for stores, SKUs, and planning data
+ */
 import dotenv from "dotenv";
 import express from "express";
 import cors from "cors";
