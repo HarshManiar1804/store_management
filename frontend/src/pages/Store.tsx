@@ -8,7 +8,7 @@
  * - Searching stores by name
  * - Pagination controls
  */
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import axios from 'axios';
 import { useForm } from 'react-hook-form';
 import {
@@ -50,8 +50,17 @@ const Store = () => {
     // Form handling with react-hook-form
     const { register, handleSubmit, reset, formState: { errors } } = useForm<iStoreFormData>();
 
-    // Calculate total pages based on all stores for pagination
-    const totalPages = Math.ceil(allStores.length / itemsPerPage);
+    // Calculate total pages based on filtered stores for pagination
+    const filteredStores = useMemo(() => {
+        return allStores.filter(store =>
+            store.label.toLowerCase().includes(searchQuery.toLowerCase())
+        );
+    }, [allStores, searchQuery]);
+
+    // Calculate total pages based on filtered stores
+    const totalPages = useMemo(() => {
+        return Math.ceil(filteredStores.length / itemsPerPage);
+    }, [filteredStores, itemsPerPage]);
 
     // Load stores data on component mount
     useEffect(() => {
@@ -62,7 +71,7 @@ const Store = () => {
      * Fetches all stores from the API
      * Sets loading state during API call and updates store data on success
      */
-    const fetchStores = async () => {
+    const fetchStores = useCallback(async () => {
         try {
             setLoading(true);
             const { data } = await axios.get(`http://localhost:4000/stores`);
@@ -72,14 +81,14 @@ const Store = () => {
         } finally {
             setLoading(false);
         }
-    };
+    }, []);
 
     /**
      * Creates a new store by sending data to the API
      * @param storeData - The store data to be created
      * @returns The response data from the API
      */
-    const createStore = async (storeData: iStoreFormData) => {
+    const createStore = useCallback(async (storeData: iStoreFormData) => {
         try {
             const response = await axios.post('http://localhost:4000/stores', storeData);
             toast.success('Store added successfully');
@@ -88,14 +97,14 @@ const Store = () => {
             console.error('Error adding store:', error);
             throw new Error('Failed to add store');
         }
-    };
+    }, []);
 
     /**
      * Handles form submission for creating a new store
      * Calls createStore with form data and refreshes the store list on success
      * @param data - The form data from react-hook-form
      */
-    const onSubmit = async (data: iStoreFormData) => {
+    const onSubmit = useCallback(async (data: iStoreFormData) => {
         try {
             await createStore(data);
             setIsDrawerOpen(false);
@@ -104,14 +113,14 @@ const Store = () => {
         } catch (error) {
             toast.error('Failed to add store');
         }
-    };
+    }, [createStore, fetchStores, reset]);
 
     /**
      * Deletes a store by ID
      * Refreshes the store list after successful deletion
      * @param id - The ID of the store to delete
      */
-    const handleDelete = async (id: string) => {
+    const handleDelete = useCallback(async (id: string) => {
         try {
             await axios.delete(`http://localhost:4000/stores/${id}`);
             // Refresh the stores list after deletion
@@ -121,36 +130,29 @@ const Store = () => {
             console.error('Error deleting store:', error);
             toast.error('Failed to delete store');
         }
-    };
+    }, [fetchStores]);
 
     /**
      * Filters and paginates store data for the current page
-     * Applies search filter to store names
      * @returns Array of stores for the current page
      */
-    const getCurrentPageData = () => {
-        const filteredStores = allStores.filter(store =>
-            store.label.toLowerCase().includes(searchQuery.toLowerCase())
-        );
+    const getCurrentPageData = useMemo(() => {
         const startIndex = (currentPage - 1) * itemsPerPage;
         return filteredStores.slice(startIndex, startIndex + itemsPerPage);
-    };
+    }, [filteredStores, currentPage, itemsPerPage]);
 
     /**
      * Updates the current page for pagination
      * @param page - The page number to navigate to
      */
-    const handlePageChange = (page: number) => {
+    const handlePageChange = useCallback((page: number) => {
         setCurrentPage(page);
-    };
+    }, []);
 
     // Show loading indicator while fetching data
     if (loading) {
         return <div>Loading stores...</div>;
     }
-
-    // Get current page data for rendering
-    const currentStores = getCurrentPageData();
 
     return (
         <div className="space-y-3">
@@ -258,7 +260,7 @@ const Store = () => {
                     </TableRow>
                 </TableHeader>
                 <TableBody>
-                    {currentStores.map((store, index) => (
+                    {getCurrentPageData.map((store: iStore, index: number) => (
                         <TableRow key={store.id}>
                             <TableCell>{(currentPage - 1) * itemsPerPage + index + 1}</TableCell>
                             <TableCell className="font-medium">{store.id}</TableCell>

@@ -13,6 +13,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { iSKUData } from "@/lib/utils";
+import { useMemo, memo } from "react";
 
 /**
  * Helper function to determine the background color for gross margin percentages
@@ -29,20 +30,67 @@ const getGMColor = (gmPercent: number) => {
     return "bg-red-500 text-white"; // Very low margin
 };
 
-const PlanningSKU = ({ skuData }: { skuData: iSKUData }) => {
-    console.log("SKU Data:", skuData);
+// Memoized cell component to prevent unnecessary re-renders
+const WeekDataCell = memo(({ sku, week }: { sku: any; week: string }) => {
+    // Find sales data for this specific week, or use defaults if not found
+    const weekData = sku.salesData.find((sale: any) => sale.week === week);
+    const salesUnits = weekData?.salesUnits || 0;
+    
+    // Calculate financial metrics
+    const grossSales = salesUnits * (sku.price || 0);
+    const grossMarginDollars = salesUnits * ((sku.price || 0) - (sku.cost || 0));
+    const grossMarginPercent =
+        grossSales > 0
+            ? ((grossMarginDollars / grossSales) * 100).toFixed(2)
+            : "0.00";
 
+    return (
+        <div className="border rounded-md shadow-sm p-3">
+            <table className="w-full border-collapse">
+                <thead>
+                    <tr className="border-b">
+                        <th className="text-xs text-muted-foreground font-medium p-2 text-left">Sales Units</th>
+                        <th className="text-xs text-muted-foreground font-medium p-2 text-left">Sales Dollars</th>
+                        <th className="text-xs text-muted-foreground font-medium p-2 text-left">GM Dollars</th>
+                        <th className="text-xs text-muted-foreground font-medium p-2 text-center">GM %</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr className="border-b">
+                        <td className="p-2">{salesUnits}</td>
+                        <td className="p-2">${grossSales.toFixed(2)}</td>
+                        <td className="p-2">${grossMarginDollars.toFixed(2)}</td>
+                        {/* Color-coded cell for gross margin percentage */}
+                        <td className={`p-2 text-center font-medium ${getGMColor(parseFloat(grossMarginPercent))}`}>
+                            {grossMarginPercent}%
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    );
+});
+
+// Add display name for debugging purposes
+WeekDataCell.displayName = 'WeekDataCell';
+
+const PlanningSKU = ({ skuData }: { skuData: iSKUData }) => {
     // Handle empty data state
     if (!skuData || !skuData.data) {
         return <p>No data available</p>;
     }
 
-    // Convert SKU data object to array for easier processing
-    const skuArray = Object.values(skuData.data);
+    // Memoize the SKU array and weeks to prevent recalculation on every render
+    const { skuArray, allWeeks } = useMemo(() => {
+        // Convert SKU data object to array for easier processing
+        const skuArray = Object.values(skuData.data);
 
-    // Extract and sort weeks chronologically from all SKU sales data
-    const allWeeks = Array.from(new Set(skuArray.flatMap((sku) => sku.salesData.map((sale) => sale.week))))
-        .sort((a, b) => a.localeCompare(b));
+        // Extract and sort weeks chronologically from all SKU sales data
+        const allWeeks = Array.from(new Set(skuArray.flatMap((sku) => sku.salesData.map((sale) => sale.week))))
+            .sort((a, b) => a.localeCompare(b));
+            
+        return { skuArray, allWeeks };
+    }, [skuData]);
 
     return (
         <Card>
@@ -84,48 +132,11 @@ const PlanningSKU = ({ skuData }: { skuData: iSKUData }) => {
                                     </TableCell>
 
                                     {/* Generate cells for each week's data */}
-                                    {allWeeks.map((week, index) => {
-                                        // Find sales data for this specific week, or use defaults if not found
-                                        const weekData = sku.salesData.find((sale) => sale.week === week);
-                                        const salesUnits = weekData?.salesUnits || 0;
-                                        
-                                        // Calculate financial metrics
-                                        const grossSales = salesUnits * (sku.price || 0);
-                                        const grossMarginDollars = salesUnits * ((sku.price || 0) - (sku.cost || 0));
-                                        const grossMarginPercent =
-                                            grossSales > 0
-                                                ? ((grossMarginDollars / grossSales) * 100).toFixed(2)
-                                                : "0.00";
-
-                                        return (
-                                            <TableCell key={index} className="p-1 min-w-[400px]">
-                                                {/* Card-like container for each week's metrics */}
-                                                <div className="border rounded-md shadow-sm p-3">
-                                                    <table className="w-full border-collapse">
-                                                        <thead>
-                                                            <tr className="border-b">
-                                                                <th className="text-xs text-muted-foreground font-medium p-2 text-left">Sales Units</th>
-                                                                <th className="text-xs text-muted-foreground font-medium p-2 text-left">Sales Dollars</th>
-                                                                <th className="text-xs text-muted-foreground font-medium p-2 text-left">GM Dollars</th>
-                                                                <th className="text-xs text-muted-foreground font-medium p-2 text-center">GM %</th>
-                                                            </tr>
-                                                        </thead>
-                                                        <tbody>
-                                                            <tr className="border-b">
-                                                                <td className="p-2">{salesUnits}</td>
-                                                                <td className="p-2">${grossSales.toFixed(2)}</td>
-                                                                <td className="p-2">${grossMarginDollars.toFixed(2)}</td>
-                                                                {/* Color-coded cell for gross margin percentage */}
-                                                                <td className={`p-2 text-center font-medium ${getGMColor(parseFloat(grossMarginPercent))}`}>
-                                                                    {grossMarginPercent}%
-                                                                </td>
-                                                            </tr>
-                                                        </tbody>
-                                                    </table>
-                                                </div>
-                                            </TableCell>
-                                        );
-                                    })}
+                                    {allWeeks.map((week, index) => (
+                                        <TableCell key={index} className="p-1 min-w-[400px]">
+                                            <WeekDataCell sku={sku} week={week} />
+                                        </TableCell>
+                                    ))}
                                 </TableRow>
                             ))}
                         </TableBody>
@@ -136,4 +147,5 @@ const PlanningSKU = ({ skuData }: { skuData: iSKUData }) => {
     );
 };
 
-export default PlanningSKU;
+// Wrap the component with memo to prevent unnecessary re-renders
+export default memo(PlanningSKU);

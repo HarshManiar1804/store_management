@@ -9,7 +9,7 @@
  * - Pagination controls
  */
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo, useCallback } from 'react';
 import axios from 'axios';
 import { useForm } from 'react-hook-form';
 import {
@@ -34,62 +34,95 @@ import {
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button";
-import { X } from 'lucide-react';
+import { X, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
-import {  iSKUFormData, iSKU} from '@/lib/utils';
+import { iSKUFormData, iSKU } from '@/lib/utils';
 
+
+// API base URL - should be in environment variable in production
+const API_URL = 'http://localhost:4000';
 
 const SKUs = () => {
     // State management for SKU data and UI controls
     const [allSKUs, setAllSKUs] = useState<iSKU[]>([]); // Stores all SKU data from API
     const [loading, setLoading] = useState(true); // Tracks loading state for API calls
+    const [submitting, setSubmitting] = useState(false); // Tracks form submission state
+    const [deleting, setDeleting] = useState<string | null>(null); // Tracks which SKU is being deleted
     const [currentPage, setCurrentPage] = useState(1); // Current page for pagination
     const [searchQuery, setSearchQuery] = useState(''); // Stores search input for filtering
     const [isDrawerOpen, setIsDrawerOpen] = useState(false); // Controls add SKU drawer visibility
     const itemsPerPage = 10; // Number of SKUs to display per page
 
+
+    const debouncedSearchQuery = searchQuery;
+
     // Form handling with react-hook-form
     const { register, handleSubmit, reset, formState: { errors } } = useForm<iSKUFormData>();
 
-    // Calculate total pages based on all SKUs for pagination
-    const totalPages = Math.ceil(allSKUs.length / itemsPerPage);
+    // Memoize filtered SKUs to avoid recalculation on every render
+    const filteredSKUs = useMemo(() => {
+        return allSKUs.filter(sku =>
+            sku.label.toLowerCase().includes(debouncedSearchQuery.toLowerCase())
+        );
+    }, [allSKUs, debouncedSearchQuery]);
 
-    // Load SKUs data on component mount
+    // Calculate total pages based on filtered SKUs for pagination
+    const totalPages = useMemo(() => {
+        return Math.ceil(filteredSKUs.length / itemsPerPage);
+    }, [filteredSKUs, itemsPerPage]);
+
+    // Get current page data for rendering - memoized to avoid recalculation
+    const currentSKUs = useMemo(() => {
+        const startIndex = (currentPage - 1) * itemsPerPage;
+        return filteredSKUs.slice(startIndex, startIndex + itemsPerPage);
+    }, [filteredSKUs, currentPage, itemsPerPage]);
+
+    // Reset to first page when search query changes
     useEffect(() => {
-        fetchSKU();
-    }, []);
+        setCurrentPage(1);
+    }, [debouncedSearchQuery]);
 
     /**
      * Fetches all SKUs from the API
      * Sets loading state during API call and updates SKU data on success
      */
-    const fetchSKU = async () => {
+    const fetchSKU = useCallback(async () => {
         try {
             setLoading(true);
-            const { data } = await axios.get(`http://localhost:4000/skus`);
+            const { data } = await axios.get(`${API_URL}/skus`);
             setAllSKUs(data.skus || data);
-        } catch {
-            console.error('Error fetching SKU:', errors);
+        } catch (error) {
+            console.error('Error fetching SKU:', error);
+            toast.error('Failed to load SKUs. Please try again.');
         } finally {
             setLoading(false);
         }
-    };
+    }, []);
+
+    // Load SKUs data on component mount
+    useEffect(() => {
+        fetchSKU();
+    }, [fetchSKU]);
 
     /**
      * Creates a new SKU by sending data to the API
      * @param skuData - The SKU data to be created
      * @returns The response data from the API
      */
-    const createSKU = async (skuData: iSKUFormData) => {
+    const createSKU = useCallback(async (skuData: iSKUFormData) => {
         try {
-            const response = await axios.post('http://localhost:4000/skus', skuData);
+            setSubmitting(true);
+            const response = await axios.post(`${API_URL}/skus`, skuData);
             toast.success('SKU added successfully');
             return response.data;
         } catch (error) {
             console.error('Error adding SKU:', error);
-            throw new Error('Failed to add SKU');
+            toast.error('Failed to add SKU');
+            throw error;
+        } finally {
+            setSubmitting(false);
         }
-    };
+    }, []);
 
     /**
      * Handles form submission for creating a new SKU
@@ -97,7 +130,7 @@ const SKUs = () => {
      * Refreshes the SKU list on success
      * @param data - The form data from react-hook-form
      */
-    const onSubmit = async (data: iSKUFormData) => {
+    const onSubmit = useCallback(async (data: iSKUFormData) => {
         try {
             const formattedData = {
                 ...data,
@@ -110,55 +143,47 @@ const SKUs = () => {
             reset();
             fetchSKU();
         } catch (error) {
-            toast.error('Failed to add SKU');
+            // Error is already handled in createSKU
         }
-    };
+    }, [createSKU, fetchSKU, reset]);
 
     /**
      * Deletes a SKU by ID
      * Refreshes the SKU list after successful deletion
      * @param id - The ID of the SKU to delete
      */
-    const handleDelete = async (id: string) => {
+    const handleDelete = useCallback(async (id: string) => {
         try {
-            await axios.delete(`http://localhost:4000/skus/${id}`);
+            setDeleting(id);
+            await axios.delete(`${API_URL}/skus/${id}`);
             // Refresh the SKUs list after deletion
             fetchSKU();
             toast.success('SKU deleted successfully');
         } catch (error) {
             console.error('Error deleting SKU:', error);
             toast.error('Failed to delete SKU');
+        } finally {
+            setDeleting(null);
         }
-    };
-
-    /**
-     * Filters and paginates SKU data for the current page
-     * Applies search filter to SKU names
-     * @returns Array of SKUs for the current page
-     */
-    const getCurrentPageData = () => {
-        const filteredStores = allSKUs.filter(store =>
-            store.label.toLowerCase().includes(searchQuery.toLowerCase())
-        );
-        const startIndex = (currentPage - 1) * itemsPerPage;
-        return filteredStores.slice(startIndex, startIndex + itemsPerPage);
-    };
+    }, [fetchSKU]);
 
     /**
      * Updates the current page for pagination
      * @param page - The page number to navigate to
      */
-    const handlePageChange = (page: number) => {
+    const handlePageChange = useCallback((page: number) => {
         setCurrentPage(page);
-    };
+    }, []);
 
-    // Show loading indicator while fetching data
-    if (loading) {
-        return <div>Loading SKUs...</div>;
+    // Show loading indicator while fetching initial data
+    if (loading && allSKUs.length === 0) {
+        return (
+            <div className="flex justify-center items-center h-64">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                <span className="ml-2">Loading SKUs...</span>
+            </div>
+        );
     }
-
-    // Get current page data for rendering
-    const currentSKUs = getCurrentPageData();
 
     return (
         <div className="space-y-3">
@@ -198,6 +223,7 @@ const SKUs = () => {
                                         <Input
                                             id={field}
                                             type={field === 'price' || field === 'cost' ? 'number' : 'text'}
+                                            step={field === 'price' || field === 'cost' ? '0.01' : undefined}
                                             {...register(field as keyof iSKUFormData, { required: `${field} is required` })}
                                             placeholder={`Enter ${field}`}
                                         />
@@ -208,7 +234,20 @@ const SKUs = () => {
                                 ))}
                             </div>
                             <DrawerFooter>
-                                <Button type="submit" className='cursor-pointer'>Add SKU</Button>
+                                <Button 
+                                    type="submit" 
+                                    className='cursor-pointer'
+                                    disabled={submitting}
+                                >
+                                    {submitting ? (
+                                        <>
+                                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                            Adding...
+                                        </>
+                                    ) : (
+                                        'Add SKU'
+                                    )}
+                                </Button>
                                 <DrawerClose asChild>
                                     <Button variant="outline" type="button" className='cursor-pointer'>Cancel</Button>
                                 </DrawerClose>
@@ -218,69 +257,145 @@ const SKUs = () => {
                 </Drawer>
             </div>
             
-            {/* SKUs Table */}
-            <Table>
-                <TableCaption>List of Available SKUs</TableCaption>
-                <TableHeader>
-                    <TableRow>
-                        <TableHead>#</TableHead>
-                        <TableHead>SKU ID</TableHead>
-                        <TableHead>Label</TableHead>
-                        <TableHead>Class</TableHead>
-                        <TableHead>Department</TableHead>
-                        <TableHead>Price</TableHead>
-                        <TableHead>Cost</TableHead>
-                        <TableHead>Actions</TableHead>
-                    </TableRow>
-                </TableHeader>
-                <TableBody>
-                    {currentSKUs.map((sku, index) => (
-                        <TableRow key={sku.id}>
-                            <TableCell>{(currentPage - 1) * itemsPerPage + index + 1}</TableCell>
-                            <TableCell className="font-medium">{sku.id}</TableCell>
-                            <TableCell>{sku.label}</TableCell>
-                            <TableCell>{sku.class}</TableCell>
-                            <TableCell>{sku.department}</TableCell>
-                            <TableCell>{sku.price}</TableCell>
-                            <TableCell>{sku.cost}</TableCell>
-                            <TableCell>
-                                <Button className='cursor-pointer' onClick={() => handleDelete(sku.id)}>
-                                    <X />
-                                </Button>
-                            </TableCell>
-                        </TableRow>
-                    ))}
-                </TableBody>
-            </Table>
-            
-            {/* Pagination Controls */}
-            <div className="flex items-center justify-end space-x-2">
-                <Button
-                    variant="outline"
-                    onClick={() => handlePageChange(currentPage - 1)}
-                    disabled={currentPage === 1}
-                    className='cursor-pointer'
-                >
-                    Previous
-                </Button>
-                {[...Array(totalPages)].map((_, index) => (
-                    <Button
-                        key={index + 1}
-                        variant={currentPage === index + 1 ? "default" : "outline"}
-                        onClick={() => handlePageChange(index + 1)}
-                        className='cursor-pointer'
-                    >
-                        {index + 1}
-                    </Button>
-                ))}
-                <Button
-                    variant="outline"
-                    onClick={() => handlePageChange(currentPage + 1)}
-                    disabled={currentPage === totalPages}
-                >
-                    Next
-                </Button>
-            </div>
+            {/* SKUs Table with loading state */}
+            {loading && allSKUs.length > 0 ? (
+                <div className="flex justify-center items-center h-64">
+                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                    <span className="ml-2">Refreshing SKUs...</span>
+                </div>
+            ) : (
+                <>
+                    <Table>
+                        <TableCaption>List of Available SKUs</TableCaption>
+                        <TableHeader>
+                            <TableRow>
+                                <TableHead>#</TableHead>
+                                <TableHead>SKU ID</TableHead>
+                                <TableHead>Label</TableHead>
+                                <TableHead>Class</TableHead>
+                                <TableHead>Department</TableHead>
+                                <TableHead>Price</TableHead>
+                                <TableHead>Cost</TableHead>
+                                <TableHead>Actions</TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            {currentSKUs.length === 0 ? (
+                                <TableRow>
+                                    <TableCell colSpan={8} className="text-center py-4">
+                                        No SKUs found matching your search criteria
+                                    </TableCell>
+                                </TableRow>
+                            ) : (
+                                currentSKUs.map((sku, index) => (
+                                    <TableRow key={sku.id}>
+                                        <TableCell>{(currentPage - 1) * itemsPerPage + index + 1}</TableCell>
+                                        <TableCell className="font-medium">{sku.id}</TableCell>
+                                        <TableCell>{sku.label}</TableCell>
+                                        <TableCell>{sku.class}</TableCell>
+                                        <TableCell>{sku.department}</TableCell>
+                                        <TableCell>${sku.price.toFixed(2)}</TableCell>
+                                        <TableCell>${sku.cost.toFixed(2)}</TableCell>
+                                        <TableCell>
+                                            <Button 
+                                                className='cursor-pointer' 
+                                                onClick={() => handleDelete(sku.id)}
+                                                disabled={deleting === sku.id}
+                                            >
+                                                {deleting === sku.id ? (
+                                                    <Loader2 className="h-4 w-4 animate-spin" />
+                                                ) : (
+                                                    <X />
+                                                )}
+                                            </Button>
+                                        </TableCell>
+                                    </TableRow>
+                                ))
+                            )}
+                        </TableBody>
+                    </Table>
+                    
+                    {/* Pagination Controls */}
+                    {currentSKUs.length > 0 && (
+                        <div className="flex items-center justify-end space-x-2">
+                            <Button
+                                variant="outline"
+                                onClick={() => handlePageChange(currentPage - 1)}
+                                disabled={currentPage === 1}
+                                className='cursor-pointer'
+                            >
+                                Previous
+                            </Button>
+                            {totalPages <= 7 ? (
+                                // Show all pages if there are 7 or fewer
+                                [...Array(totalPages)].map((_, index) => (
+                                    <Button
+                                        key={index + 1}
+                                        variant={currentPage === index + 1 ? "default" : "outline"}
+                                        onClick={() => handlePageChange(index + 1)}
+                                        className='cursor-pointer'
+                                    >
+                                        {index + 1}
+                                    </Button>
+                                ))
+                            ) : (
+                                // Show limited pages with ellipsis for many pages
+                                <>
+                                    {/* First page */}
+                                    <Button
+                                        variant={currentPage === 1 ? "default" : "outline"}
+                                        onClick={() => handlePageChange(1)}
+                                        className='cursor-pointer'
+                                    >
+                                        1
+                                    </Button>
+                                    
+                                    {/* Ellipsis if not near start */}
+                                    {currentPage > 3 && <span>...</span>}
+                                    
+                                    {/* Pages around current page */}
+                                    {[...Array(5)].map((_, i) => {
+                                        const pageNum = Math.max(2, currentPage - 2) + i;
+                                        if (pageNum > 1 && pageNum < totalPages) {
+                                            return (
+                                                <Button
+                                                    key={pageNum}
+                                                    variant={currentPage === pageNum ? "default" : "outline"}
+                                                    onClick={() => handlePageChange(pageNum)}
+                                                    className='cursor-pointer'
+                                                >
+                                                    {pageNum}
+                                                </Button>
+                                            );
+                                        }
+                                        return null;
+                                    }).filter(Boolean)}
+                                    
+                                    {/* Ellipsis if not near end */}
+                                    {currentPage < totalPages - 2 && <span>...</span>}
+                                    
+                                    {/* Last page */}
+                                    <Button
+                                        variant={currentPage === totalPages ? "default" : "outline"}
+                                        onClick={() => handlePageChange(totalPages)}
+                                        className='cursor-pointer'
+                                    >
+                                        {totalPages}
+                                    </Button>
+                                </>
+                            )}
+                            <Button
+                                variant="outline"
+                                onClick={() => handlePageChange(currentPage + 1)}
+                                disabled={currentPage === totalPages}
+                                className='cursor-pointer'
+                            >
+                                Next
+                            </Button>
+                        </div>
+                    )}
+                </>
+            )}
         </div>
     );
 };

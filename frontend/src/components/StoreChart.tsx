@@ -28,6 +28,7 @@ import {
     ChartOptions
 } from "chart.js";
 import { Bar } from "react-chartjs-2";
+import { useMemo } from "react";
 
 // Register required Chart.js components
 ChartJS.register(
@@ -53,132 +54,137 @@ const generateAllWeeks = (): string[] => {
     return weeks;
 };
 
+// Memoize the weeks array to prevent regeneration on every render
+const allWeeks = generateAllWeeks();
+
 const StoreChart = ({ skuData }: { skuData: iSKUData }) => {
     // Handle empty data state
     if (!skuData || !skuData.data) {
         return <p>No data available</p>;
     }
 
-    // Convert SKU data object to array for processing
-    const skuArray = Object.values(skuData.data);
+    // Use useMemo to process the data only when skuData changes
+    const { chartData, options } = useMemo(() => {
+        // Convert SKU data object to array for processing
+        const skuArray = Object.values(skuData.data);
 
-    // Generate all 52 weeks for the x-axis
-    const allWeeks = generateAllWeeks();
-
-    // Initialize data map with zeros for all weeks
-    const salesMap: Record<string, { gmDollars: number; gmPercent: number; revenue: number; cost: number }> = {};
-    allWeeks.forEach((week) => {
-        salesMap[week] = { gmDollars: 0, gmPercent: 0, revenue: 0, cost: 0 };
-    });
-
-    // Aggregate sales data across all SKUs by week
-    skuArray.forEach((sku) => {
-        const { price, cost, salesData } = sku;
-        salesData.forEach(({ week, salesUnits }) => {
-            // Calculate financial metrics for this SKU and week
-            const revenue = salesUnits * price;
-            const totalCost = salesUnits * cost;
-            const gmDollars = revenue - totalCost;
-
-            // Accumulate totals in the sales map
-            salesMap[week].gmDollars += gmDollars;
-            salesMap[week].revenue += revenue;
-            salesMap[week].cost += totalCost;
+        // Initialize data map with zeros for all weeks
+        const salesMap: Record<string, { gmDollars: number; gmPercent: number; revenue: number; cost: number }> = {};
+        allWeeks.forEach((week) => {
+            salesMap[week] = { gmDollars: 0, gmPercent: 0, revenue: 0, cost: 0 };
         });
-    });
 
-    // Calculate GM percentage for each week after all revenue/costs are aggregated
-    allWeeks.forEach((week) => {
-        const revenue = salesMap[week].revenue;
-        const gmDollars = salesMap[week].gmDollars;
-        salesMap[week].gmPercent = revenue ? (gmDollars / revenue) * 100 : 0;
-    });
+        // Aggregate sales data across all SKUs by week
+        skuArray.forEach((sku) => {
+            const { price, cost, salesData } = sku;
+            salesData.forEach(({ week, salesUnits }) => {
+                // Calculate financial metrics for this SKU and week
+                const revenue = salesUnits * price;
+                const totalCost = salesUnits * cost;
+                const gmDollars = revenue - totalCost;
 
-    // Extract data series for the chart
-    const gmDollarsData = allWeeks.map((week) => salesMap[week].gmDollars);
-    const gmPercentData = allWeeks.map((week) => salesMap[week].gmPercent);
+                // Accumulate totals in the sales map
+                salesMap[week].gmDollars += gmDollars;
+                salesMap[week].revenue += revenue;
+                salesMap[week].cost += totalCost;
+            });
+        });
 
-    // Configure chart data with two datasets (bar and line)
-    const chartData = {
-        labels: allWeeks,
-        datasets: [
-            {
-                type: "bar" as const,
-                label: "GM Dollars",
-                data: gmDollarsData,
-                backgroundColor: "rgba(54, 162, 235, 0.6)",
-                yAxisID: "y",  // Associate with left y-axis (dollars)
-            },
-            {
-                type: "line" as const,
-                label: "GM %",
-                data: gmPercentData,
-                borderColor: "rgba(255, 99, 132, 1)",
-                borderWidth: 2,
-                fill: false,
-                yAxisID: "y1",  // Associate with right y-axis (percentages)
-            },
-        ],
-    };
+        // Calculate GM percentage for each week after all revenue/costs are aggregated
+        allWeeks.forEach((week) => {
+            const revenue = salesMap[week].revenue;
+            const gmDollars = salesMap[week].gmDollars;
+            salesMap[week].gmPercent = revenue ? (gmDollars / revenue) * 100 : 0;
+        });
 
-    // Configure chart options including axes, tooltips, and responsiveness
-    const options = {
-        responsive: true,
-        maintainAspectRatio: false,
-        scales: {
-            x: {
-                ticks: {
-                    autoSkip: false, // Prevent automatic skipping of labels
-                    maxRotation: 90, // Rotate labels to fit more
-                    minRotation: 45
-                }
-            },
-            y: {
-                type: "linear" as const,
-                display: true,
-                position: "left" as const,
-                title: {
-                    display: true,
-                    text: "GM Dollars ($)"
+        // Extract data series for the chart
+        const gmDollarsData = allWeeks.map((week) => salesMap[week].gmDollars);
+        const gmPercentData = allWeeks.map((week) => salesMap[week].gmPercent);
+
+        // Configure chart data with two datasets (bar and line)
+        const chartData = {
+            labels: allWeeks,
+            datasets: [
+                {
+                    type: "bar" as const,
+                    label: "GM Dollars",
+                    data: gmDollarsData,
+                    backgroundColor: "rgba(54, 162, 235, 0.6)",
+                    yAxisID: "y",  // Associate with left y-axis (dollars)
                 },
-            },
-            y1: {
-                type: "linear" as const,
-                display: true,
-                position: "right" as const,
-                title: {
-                    display: true,
-                    text: "GM %"
+                {
+                    type: "line" as const,
+                    label: "GM %",
+                    data: gmPercentData,
+                    borderColor: "rgba(255, 99, 132, 1)",
+                    borderWidth: 2,
+                    fill: false,
+                    yAxisID: "y1",  // Associate with right y-axis (percentages)
                 },
-                grid: {
-                    drawOnChartArea: false, // Only draw grid lines for the primary y-axis
-                },
-            },
-        },
-        plugins: {
-            // Configure tooltips to display formatted values
-            tooltip: {
-                callbacks: {
-                    label: function(context: any) {
-                        let label = context.dataset.label || '';
-                        if (label) {
-                            label += ': ';
-                        }
-                        // Format values based on whether they're percentages or dollars
-                        if (context.dataset.yAxisID === 'y1') {
-                            label += context.parsed.y.toFixed(2) + '%';
-                        } else {
-                            label += '$' + context.parsed.y.toFixed(2);
-                        }
-                        return label;
+            ],
+        };
+
+        // Configure chart options including axes, tooltips, and responsiveness
+        const options = {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                x: {
+                    ticks: {
+                        autoSkip: false, // Prevent automatic skipping of labels
+                        maxRotation: 90, // Rotate labels to fit more
+                        minRotation: 45
                     }
-                }
+                },
+                y: {
+                    type: "linear" as const,
+                    display: true,
+                    position: "left" as const,
+                    title: {
+                        display: true,
+                        text: "GM Dollars ($)"
+                    },
+                },
+                y1: {
+                    type: "linear" as const,
+                    display: true,
+                    position: "right" as const,
+                    title: {
+                        display: true,
+                        text: "GM %"
+                    },
+                    grid: {
+                        drawOnChartArea: false, // Only draw grid lines for the primary y-axis
+                    },
+                },
             },
-            legend: {
-                display: true
+            plugins: {
+                // Configure tooltips to display formatted values
+                tooltip: {
+                    callbacks: {
+                        label: function(context: any) {
+                            let label = context.dataset.label || '';
+                            if (label) {
+                                label += ': ';
+                            }
+                            // Format values based on whether they're percentages or dollars
+                            if (context.dataset.yAxisID === 'y1') {
+                                label += context.parsed.y.toFixed(2) + '%';
+                            } else {
+                                label += '$' + context.parsed.y.toFixed(2);
+                            }
+                            return label;
+                        }
+                    }
+                },
+                legend: {
+                    display: true
+                },
             },
-        },
-    };
+        };
+
+        return { chartData, options };
+    }, [skuData]);
 
     return (
         <Card>
