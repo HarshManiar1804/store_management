@@ -4,8 +4,7 @@ Gsynergy Assessment
 
 ## Project Overview
 
-## Demo Video
-https://youtu.be/uR-Dp365ECo?si=7Zf60Tchk16Cj_LI
+## Demo Video :- https://youtu.be/uR-Dp365ECo?si=7Zf60Tchk16Cj_LI
 
 GSynergy is a full-stack application with:
 
