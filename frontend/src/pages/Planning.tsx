@@ -29,7 +29,7 @@ const Planning = () => {
     const [value, setValue] = useState("");
     const [stores, setStores] = useState<Store[]>([]);
     const [loading, setLoading] = useState(true);
-    const [skuData, setSkuData] = useState([]);
+    const [skuData, setSkuData] = useState<{ data: Record<string, any> }>({ data: {} });
     const fetchStores = async () => {
         try {
             setLoading(true);
@@ -49,9 +49,7 @@ const Planning = () => {
         try {
             setLoading(true);
             const { data } = await axios.get(`http://localhost:4000/planning/${storeId}`);
-            // console.log(data);
             setSkuData(data);
-
         } catch (error) {
             console.error('Error fetching planning data:', error);
         } finally {
@@ -78,7 +76,7 @@ const Planning = () => {
                                 variant="outline"
                                 role="combobox"
                                 aria-expanded={open}
-                                className="w-[200px] justify-between"
+                                className="w-[250px] justify-between"
                             >
                                 {value
                                     ? stores.find((store) => store.id === value)?.label
@@ -88,7 +86,6 @@ const Planning = () => {
                         </PopoverTrigger>
                         <PopoverContent className="w-[200px] p-0">
                             <Command>
-                                <CommandInput placeholder="Search store..." />
                                 <CommandList>
                                     <CommandEmpty>No store found.</CommandEmpty>
                                     <CommandGroup>
@@ -113,12 +110,16 @@ const Planning = () => {
                     </Popover>
                 </div>
             )}
-            <h2 className="text-2xl font-bold">
+            <h2 className="text-2xl font-bold mb-4">
                 {value
-                    ?
-                    <PlanningSKU skuData={skuData} />
-                    : "Select a store"}
+                    ? stores.find((store) => store.id === value)?.label
+                    : ""}
             </h2>
+            <div className="w-full">
+                {value
+                    ? <PlanningSKU skuData={skuData} />
+                    : <p className="text-gray-500">Please select a store to view planning data</p>}
+            </div>
         </>
     );
 };
