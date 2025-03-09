@@ -83,7 +83,7 @@ The application uses the following data models:
 
 1. Clone the repository:
    ```
-   git clone git@github.com:HarshManiar1804/gsynergy-app.git
+   git clone git@github.com:HarshManiar1804/181818_Harsh_Maniar.git
    cd gsynergy-app
    ```
 
@@ -132,10 +132,10 @@ The backend provides the following API endpoints:
   - DELETE `/stores/:id` - Delete a store
 
 - **SKU API**:
-  - GET `/api/skus` - Get all SKUs
-  - POST `/api/skus` - Create a new SKU
-  - DELETE `/api/skus/:id` - Delete a SKU
+  - GET `/skus` - Get all SKUs
+  - POST `/skus` - Create a new SKU
+  - DELETE `/skus/:id` - Delete a SKU
 
 - **Planning API**:
-  - GET `/api/planning` - Get planning data
+  - GET `/planning` - Get planning data
 
