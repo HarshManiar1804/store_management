@@ -40,7 +40,7 @@ import { iSKUFormData, iSKU } from '@/lib/utils';
 
 
 // API base URL - should be in environment variable in production
-const API_URL = 'http://localhost:4000';
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000';
 
 const SKUs = () => {
     // State management for SKU data and UI controls

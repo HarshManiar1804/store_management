@@ -25,6 +25,8 @@ import axios from "axios";
 import PlanningSKU from "@/components/PlanningSKU";
 import { iStore } from "@/lib/utils";
 
+// API base URL - should be in environment variable in production
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000';
 
 const Planning = () => {
     // State management for store selection and data
@@ -47,7 +49,7 @@ const Planning = () => {
     const fetchStores = useCallback(async () => {
         try {
             setLoading(true);
-            const { data } = await axios.get(`http://localhost:4000/stores`);
+            const { data } = await axios.get(`${API_URL}/stores`);
             setStores(data.stores || data);
         } catch (error) {
             console.error('Error fetching stores:', error);
@@ -63,7 +65,7 @@ const Planning = () => {
     const fetchPlanningData = useCallback(async (storeId: string) => {
         try {
             setDataLoading(true);
-            const { data } = await axios.get(`http://localhost:4000/planning/${storeId}`);
+            const { data } = await axios.get(`${API_URL}/planning/${storeId}`);
             setPlanningData(data);
         } catch (error) {
             console.error('Error fetching planning data:', error);

@@ -37,6 +37,8 @@ import { X } from 'lucide-react';
 import { toast } from 'sonner';
 import { iStore, iStoreFormData, } from '@/lib/utils';
 
+// API base URL - should be in environment variable in production
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000';
 
 const Store = () => {
     // State management for store data and UI controls
@@ -74,7 +76,7 @@ const Store = () => {
     const fetchStores = useCallback(async () => {
         try {
             setLoading(true);
-            const { data } = await axios.get(`http://localhost:4000/stores`);
+            const { data } = await axios.get(`${API_URL}/stores`);
             setAllStores(data.stores || data);
         } catch (error) {
             console.error('Error fetching stores:', error);
@@ -90,7 +92,7 @@ const Store = () => {
      */
     const createStore = useCallback(async (storeData: iStoreFormData) => {
         try {
-            const response = await axios.post('http://localhost:4000/stores', storeData);
+            const response = await axios.post(`${API_URL}/stores`, storeData);
             toast.success('Store added successfully');
             return response.data;
         } catch (error) {
@@ -122,7 +124,7 @@ const Store = () => {
      */
     const handleDelete = useCallback(async (id: string) => {
         try {
-            await axios.delete(`http://localhost:4000/stores/${id}`);
+            await axios.delete(`${API_URL}/stores/${id}`);
             // Refresh the stores list after deletion
             fetchStores();
             toast.success('Store deleted successfully');
