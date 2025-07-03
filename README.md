@@ -1,12 +1,8 @@
-# GSynergy App
-
-Gsynergy Assessment 
-
 ## Project Overview
 
 ## Demo Video :- https://youtu.be/uR-Dp365ECo?si=7Zf60Tchk16Cj_LI
 
-GSynergy is a full-stack application with:
+Store-management is a full-stack application with:
 
 - **Frontend**: React-based UI with modern components and data visualization
 - **Backend**: Express.js API server with PostgreSQL database
@@ -42,7 +38,7 @@ GSynergy is a full-stack application with:
 ## Project Structure
 
 ```
-gsynergy-app/
+store_management-app/
 ├── frontend/                # React frontend application
 │   ├── src/
 │   │   ├── components/      # Reusable UI components
@@ -85,8 +81,8 @@ The application uses the following data models:
 
 1. Clone the repository:
    ```
-   git clone git@github.com:HarshManiar1804/181818_Harsh_Maniar.git
-   cd 181818_Harsh_Maniar
+   git clone git@github.com:HarshManiar1804/store_management.git
+   cd store_management
    ```
 
 2. Set up the backend:
